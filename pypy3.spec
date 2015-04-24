@@ -1,7 +1,7 @@
-Name:           pypy
+Name:           pypy3
 Version:        2.4.0
 Release:        1%{?dist}
-Summary:        Python implementation with a Just-In-Time compiler
+Summary:        Python 3 implementation with a Just-In-Time compiler
 
 Group:          Development/Languages
 # LGPL and another free license we'd need to ask spot about are present in some
@@ -117,8 +117,8 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 # Easy way to turn off the selftests:
 %global run_selftests 1
 
-%global pypyprefix %{_libdir}/pypy-%{version}
-%global pylibver 2.7
+%global pypyprefix %{_libdir}/pypy3-%{version}
+%global pylibver 3
 
 # We refer to this subdir of the source tree in a few places during the build:
 %global goal_dir pypy/goal
@@ -130,11 +130,11 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
   %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 # Source and patches:
-Source0: https://bitbucket.org/pypy/pypy/downloads/pypy-2.4.0-src.tar.bz2
+Source0: https://bitbucket.org/pypy/pypy/downloads/pypy3-2.4.0-src.tar.bz2
 
 # Supply various useful RPM macros for building python modules against pypy:
 #  __pypy, pypy_sitelib, pypy_sitearch
-Source2: macros.pypy
+Source2: macros.pypy3
 
 # By default, if built at a tty, the translation process renders a Mandelbrot
 # set to indicate progress.
@@ -164,19 +164,15 @@ Patch2: 007-remove-startup-message.patch
 
 %global use_self_when_building 0
 %if 0%{use_self_when_building}
+# pypy3 can only be build with pypy2
 BuildRequires: pypy
 %global bootstrap_python_interp pypy
 %else
 
-# Python 2.6 or later is needed, so on RHEL5 (2.4) we need to use the alternate
-# python26 rpm:
-%if 0%{?rhel} == 5
-BuildRequires: python26-devel
-%global bootstrap_python_interp python26
-%else
+
+# pypy3 can only be build with python2
 BuildRequires: python-devel
 %global bootstrap_python_interp python
-%endif
 
 %endif
 
@@ -218,10 +214,10 @@ BuildRequires:  emacs
 
 
 # Metadata for the core package (the JIT build):
-Requires: pypy-libs = %{version}-%{release}
+Requires: pypy3-libs = %{version}-%{release}
 
 %description
-PyPy's implementation of Python, featuring a Just-In-Time compiler on some CPU
+PyPy's implementation of Python 3, featuring a Just-In-Time compiler on some CPU
 architectures, and various optimized implementations of the standard types
 (strings, dictionaries, etc)
 
@@ -235,7 +231,7 @@ CPU architecture.
 
 %package libs
 Group:    Development/Languages
-Summary:  Run-time libraries used by PyPy implementations of Python
+Summary:  Run-time libraries used by PyPy implementations of Python 3
 
 # We supply an emacs mode for the JIT viewer.
 # (This doesn't bring in all of emacs, just the directory structure)
@@ -244,39 +240,29 @@ Requires: emacs-filesystem >= %{_emacs_version}
 %endif
 
 %description libs
-Libraries required by the various PyPy implementations of Python.
+Libraries required by the various PyPy implementations of Python 3.
 
 
 %package devel
 Group:    Development/Languages
-Summary:  Development tools for working with PyPy
-Requires: pypy = %{version}-%{release}
+Summary:  Development tools for working with PyPy3
+Requires: pypy3 = %{version}-%{release}
 
 %description devel
-Header files for building C extension modules against PyPy
+Header files for building C extension modules against PyPy3
 
 
 %if 0%{with_stackless}
 %package stackless
 Group:    Development/Languages
-Summary:  Stackless Python interpreter built using PyPy
-Requires: pypy-libs = %{version}-%{release}
+Summary:  Stackless Python interpreter built using PyPy3
+Requires: pypy3-libs = %{version}-%{release}
 %description stackless
-Build of PyPy with support for micro-threads for massive concurrency
+Build of PyPy3 with support for micro-threads for massive concurrency
 %endif
-
-%if 0%{with_stackless}
-%package stackless
-Group:    Development/Languages
-Summary:  Stackless Python interpreter built using PyPy
-Requires: pypy-libs = %{version}-%{release}
-%description stackless
-Build of PyPy with support for micro-threads for massive concurrency
-%endif
-
 
 %prep
-%setup -q -n pypy-2.4.0-src
+%setup -q -n pypy3-2.4.0-src
 %patch0 -p1 -b .suppress-mandelbrot-set-during-tty-build
 %patch1 -p1
 %patch2 -p1
@@ -294,8 +280,6 @@ for f in rpython/translator/goal/bpnn.py ; do
       && sed -i '1d' $f
    chmod a-x $f
 done
-
-rm -rf lib-python/3
 
 
 %build
@@ -421,7 +405,7 @@ BuildPyPy() {
 }
 
 BuildPyPy \
-  pypy \
+  pypy3 \
 %if 0%{with_jit}
   "-Ojit" \
 %else
@@ -431,7 +415,7 @@ BuildPyPy \
 
 %if 0%{with_stackless}
 BuildPyPy \
-  pypy-stackless \
+  pypy3-stackless \
    "--stackless"
 %endif
 
@@ -479,10 +463,10 @@ InstallPyPy() {
 mkdir -p %{buildroot}/%{_bindir}
 mkdir -p %{buildroot}/%{pypyprefix}
 
-InstallPyPy pypy
+InstallPyPy pypy3
 
 %if 0%{with_stackless}
-InstallPyPy pypy-stackless
+InstallPyPy pypy3-stackless
 %endif
 
 
@@ -585,16 +569,16 @@ mkdir -p %{buildroot}/%{pypyprefix}/site-packages
 # Note that some of the test files deliberately contain syntax errors, so
 # we pass 0 for the second argument ("errors_terminate"):
 /usr/lib/rpm/brp-python-bytecompile \
-  %{buildroot}/%{_bindir}/pypy \
+  %{buildroot}/%{_bindir}/pypy3 \
   0
 
-%{buildroot}/%{pypyprefix}/pypy -c 'import _tkinter'
-%{buildroot}/%{pypyprefix}/pypy -c 'import Tkinter'
-%{buildroot}/%{pypyprefix}/pypy -c 'import _sqlite3'
-%{buildroot}/%{pypyprefix}/pypy -c 'import _curses'
-%{buildroot}/%{pypyprefix}/pypy -c 'import curses'
-%{buildroot}/%{pypyprefix}/pypy -c 'import syslog'
-%{buildroot}/%{pypyprefix}/pypy -c 'from _sqlite3 import *'
+%{buildroot}/%{pypyprefix}/pypy3 -c 'import _tkinter'
+%{buildroot}/%{pypyprefix}/pypy3 -c 'import tkinter'
+%{buildroot}/%{pypyprefix}/pypy3 -c 'import _sqlite3'
+%{buildroot}/%{pypyprefix}/pypy3 -c 'import _curses'
+%{buildroot}/%{pypyprefix}/pypy3 -c 'import curses'
+%{buildroot}/%{pypyprefix}/pypy3 -c 'import syslog'
+%{buildroot}/%{pypyprefix}/pypy3 -c 'from _sqlite3 import *'
 
 # Header files for C extension modules.
 # Upstream's packaging process (pypy/tool/release/package.py)
@@ -658,7 +642,8 @@ find \
 # Install the JIT trace mode for Emacs:
 %if %{with_emacs}
 mkdir -p %{buildroot}/%{_emacs_sitelispdir}
-cp -a rpython/jit/tool/pypytrace-mode.el* %{buildroot}/%{_emacs_sitelispdir}
+cp -a rpython/jit/tool/pypytrace-mode.el %{buildroot}/%{_emacs_sitelispdir}/pypy3trace-mode.el
+cp -a rpython/jit/tool/pypytrace-mode.elc %{buildroot}/%{_emacs_sitelispdir}/pypy3trace-mode.elc
 %endif
 
 # Install macros for rpm:
@@ -694,7 +679,7 @@ CheckPyPy() {
 
     # Use regrtest to explicitly list all tests:
     ( ./$ExeName -c \
-         "from test.regrtest import findtests; print '\n'.join(findtests())"
+         "from test.regrtest import findtests; print('\n'.join(findtests()))"
     ) > testnames.txt
 
     # Skip some tests:
@@ -784,10 +769,10 @@ CheckPyPy() {
 #pypy/goal/pypy pypy/test_all.py --resultlog=pypyjit_new.log
 
 %if %{run_selftests}
-CheckPyPy pypy
+CheckPyPy pypy3
 
 %if 0%{with_stackless}
-CheckPyPy pypy-stackless
+CheckPyPy pypy3-stackless
 %endif
 
 %endif # run_selftests
@@ -809,21 +794,21 @@ rm -rf $RPM_BUILD_ROOT
 %{pypyprefix}/lib_pypy/
 %{pypyprefix}/site-packages/
 %if %{with_emacs}
-%{_emacs_sitelispdir}/pypytrace-mode.el
-%{_emacs_sitelispdir}/pypytrace-mode.elc
+%{_emacs_sitelispdir}/pypy3trace-mode.el
+%{_emacs_sitelispdir}/pypy3trace-mode.elc
 %endif
 
 %files
 %defattr(-,root,root,-)
 %doc LICENSE README.rst
-%{_bindir}/pypy
-%{pypyprefix}/pypy
+%{_bindir}/pypy3
+%{pypyprefix}/pypy3
 
 %files devel
 %defattr(-,root,root,-)
 %dir %{pypy_include_dir}
 %{pypy_include_dir}/*.h
-%config(noreplace) %{_rpmconfigdir}/macros.d/macros.pypy
+%config(noreplace) %{_rpmconfigdir}/macros.d/macros.pypy3
 
 %if 0%{with_stackless}
 %files stackless
