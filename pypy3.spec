@@ -771,6 +771,10 @@ CheckPyPy pypy3-stackless
 
 %endif # run_selftests
 
+# Because there's a bunch of binary subpackages and creating
+# /usr/share/licenses/pypy3-this and /usr/share/licenses/pypy3-that
+# is just confusing for the user.
+%global _docdir_fmt %{name}
 
 %files libs
 %license LICENSE
