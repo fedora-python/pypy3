@@ -213,7 +213,7 @@ BuildRequires:  emacs
 
 
 # Metadata for the core package (the JIT build):
-Requires: pypy3-libs = %{version}-%{release}
+Requires: pypy3-libs%{?_isa} = %{version}-%{release}
 
 %description
 PyPy's implementation of Python 3, featuring a Just-In-Time compiler on some CPU
@@ -245,7 +245,7 @@ Libraries required by the various PyPy implementations of Python 3.
 %package devel
 Group:    Development/Languages
 Summary:  Development tools for working with PyPy3
-Requires: pypy3 = %{version}-%{release}
+Requires: pypy3%{?_isa} = %{version}-%{release}
 
 %description devel
 Header files for building C extension modules against PyPy3
@@ -255,7 +255,7 @@ Header files for building C extension modules against PyPy3
 %package stackless
 Group:    Development/Languages
 Summary:  Stackless Python interpreter built using PyPy3
-Requires: pypy3-libs = %{version}-%{release}
+Requires: pypy3-libs%{?_isa} = %{version}-%{release}
 %description stackless
 Build of PyPy3 with support for micro-threads for massive concurrency
 %endif
