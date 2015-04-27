@@ -776,7 +776,8 @@ CheckPyPy pypy3-stackless
 
 
 %files libs
-%doc LICENSE README.rst
+%license LICENSE
+%doc README.rst
 
 %dir %{pypyprefix}
 %dir %{pypyprefix}/lib-python
@@ -791,7 +792,8 @@ CheckPyPy pypy3-stackless
 %endif
 
 %files
-%doc LICENSE README.rst
+%license LICENSE
+%doc README.rst
 %{_bindir}/pypy3
 %{pypyprefix}/pypy3
 
@@ -802,7 +804,8 @@ CheckPyPy pypy3-stackless
 
 %if 0%{with_stackless}
 %files stackless
-%doc LICENSE README.rst
+%license LICENSE
+%doc README.rst
 %{_bindir}/pypy-stackless
 %endif
 
