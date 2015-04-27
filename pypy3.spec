@@ -261,10 +261,7 @@ Build of PyPy3 with support for micro-threads for massive concurrency
 %endif
 
 %prep
-%setup -q -n pypy3-2.4.0-src
-%patch0 -p1 -b .suppress-mandelbrot-set-during-tty-build
-%patch1 -p1
-%patch2 -p1
+%autosetup -n pypy3-2.4.0-src -p1
 
 # Replace /usr/local/bin/python shebangs with /usr/bin/python:
 find -name "*.py" -exec \
