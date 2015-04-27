@@ -10,7 +10,6 @@ Group:          Development/Languages
 # licensing terms
 License:        MIT and Python and UCD
 URL:            http://pypy.org/
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 # High-level configuration of the build:
 
@@ -425,8 +424,6 @@ BuildPyPy \
 
 
 %install
-rm -rf $RPM_BUILD_ROOT
-
 # Install the various executables:
 
 InstallPyPy() {
@@ -778,12 +775,7 @@ CheckPyPy pypy3-stackless
 %endif # run_selftests
 
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-
 %files libs
-%defattr(-,root,root,-)
 %doc LICENSE README.rst
 
 %dir %{pypyprefix}
@@ -799,20 +791,17 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %files
-%defattr(-,root,root,-)
 %doc LICENSE README.rst
 %{_bindir}/pypy3
 %{pypyprefix}/pypy3
 
 %files devel
-%defattr(-,root,root,-)
 %dir %{pypy_include_dir}
 %{pypy_include_dir}/*.h
 %config(noreplace) %{_rpmconfigdir}/macros.d/macros.pypy3
 
 %if 0%{with_stackless}
 %files stackless
-%defattr(-,root,root,-)
 %doc LICENSE README.rst
 %{_bindir}/pypy-stackless
 %endif
