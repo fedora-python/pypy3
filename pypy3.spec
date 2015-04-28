@@ -170,7 +170,7 @@ BuildRequires: pypy
 
 
 # pypy3 can only be build with python2
-BuildRequires: python-devel
+BuildRequires: python2-devel
 %global bootstrap_python_interp python
 
 %endif
