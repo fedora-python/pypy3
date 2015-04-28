@@ -644,6 +644,9 @@ cp -a rpython/jit/tool/pypytrace-mode.elc %{buildroot}/%{_emacs_sitelispdir}/pyp
 mkdir -p %{buildroot}/%{_rpmconfigdir}/macros.d
 install -m 644 %{SOURCE2} %{buildroot}/%{_rpmconfigdir}/macros.d
 
+# Remove build script from the package
+rm %{buildroot}/%{pypyprefix}/lib_pypy/ctypes_config_cache/rebuild.py
+
 %check
 topdir=$(pwd)
 
