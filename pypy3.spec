@@ -801,7 +801,7 @@ CheckPyPy pypy3-stackless
 %files devel
 %dir %{pypy_include_dir}
 %{pypy_include_dir}/*.h
-%config(noreplace) %{_rpmconfigdir}/macros.d/macros.pypy3
+%{_rpmconfigdir}/macros.d/macros.pypy3
 
 %if 0%{with_stackless}
 %files stackless
