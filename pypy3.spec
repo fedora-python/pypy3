@@ -211,6 +211,8 @@ BuildRequires:  /usr/bin/execstack
 BuildRequires:  emacs
 %endif
 
+# For %%autosetup -S git
+BuildRequires:  git
 
 # Metadata for the core package (the JIT build):
 Requires: pypy3-libs%{?_isa} = %{version}-%{release}
