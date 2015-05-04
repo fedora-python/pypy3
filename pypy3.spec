@@ -337,14 +337,14 @@ BuildPyPy() {
   # This is the most portable option, and avoids a reliance on non-guaranteed
   # behaviors within GCC's code generator: use an explicitly-maintained stack
   # of root pointers:
-  %define gcrootfinder_options --gcrootfinder=shadowstack
+  %global gcrootfinder_options --gcrootfinder=shadowstack
 
   export CFLAGS=$(echo "$RPM_OPT_FLAGS")
 
 %else
   # Go with the default, which is "asmgcc"
 
-  %define gcrootfinder_options %{nil}
+  %global gcrootfinder_options %{nil}
 
   # https://bugzilla.redhat.com/show_bug.cgi?id=588941#c18
   # The generated Makefile compiles the .c files into assembler (.s), rather
