@@ -161,7 +161,9 @@ Patch2: 007-remove-startup-message.patch
 # Turn it off with this boolean, to revert back to rebuilding using CPython
 # and avoid a cycle in the build-time dependency graph:
 
-%global use_self_when_building 0
+# Note, pypy3 is built with pypy2, so no dependency cycle
+
+%global use_self_when_building 1
 %if 0%{use_self_when_building}
 # pypy3 can only be build with pypy2
 BuildRequires: pypy
