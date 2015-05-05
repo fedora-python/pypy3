@@ -281,6 +281,11 @@ for f in rpython/translator/goal/bpnn.py ; do
    chmod a-x $f
 done
 
+# Replace all lib-python python shebangs with pypy
+find lib-python/%{pylibver} -name "*.py" -exec \
+  sed -r -i '1s|^#!\s*/usr/bin.*python.*|#!/usr/bin/%{name}|' \
+    "{}" \
+    \;
 
 %build
 
