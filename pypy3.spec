@@ -1,6 +1,6 @@
 Name:           pypy3
 Version:        2.4.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Python 3 implementation with a Just-In-Time compiler
 
 Group:          Development/Languages
@@ -824,6 +824,9 @@ CheckPyPy %{name}-stackless
 
 
 %changelog
+* Tue Aug 04 2015 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 2.4.0-3
+- Bump release to rebuild with new execstack
+
 * Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.4.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
