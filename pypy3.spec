@@ -1,6 +1,6 @@
 Name:           pypy3
 Version:        2.4.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Python 3 implementation with a Just-In-Time compiler
 
 Group:          Development/Languages
@@ -152,6 +152,9 @@ Patch1: 006-always-log-stdout.patch
 # community that won't make sense outside of it).  [Sorry to be a killjoy]
 Patch2: 007-remove-startup-message.patch
 
+# https://bugzilla.redhat.com/show_bug.cgi?id=1307889
+# https://bitbucket.org/pypy/pypy/commits/c4c54cb69aba
+Patch3: 008-maximum-recursion-depth.patch
 
 # Build-time requirements:
 
@@ -287,6 +290,20 @@ find lib-python/%{pylibver} -name "*.py" -exec \
     "{}" \
     \;
 
+# Hacky fix to allow the curses module to build on x86_64; otherwise we get:
+#   cffi.ffiplatform.VerificationError: anonymous MEVENT: wrong total size
+#                                       (we have 24, but C compiler says 20)
+# https://github.com/archlinuxcn/repo/commit/560a75090333b6de8a1de960acac5e624b444ee1
+%ifarch x86_64
+  _type=unsigned
+%else
+  _type=uint32_t
+%endif
+
+sed -i -e "s/typedef unsigned long mmask_t/typedef $_type mmask_t/" \
+         -e "s/typedef unsigned long chtype/typedef $_type chtype/" \
+      lib_pypy/_curses.py
+
 %build
 
 BuildPyPy() {
@@ -348,7 +365,8 @@ BuildPyPy() {
   # of root pointers:
   %global gcrootfinder_options --gcrootfinder=shadowstack
 
-  export CFLAGS=$(echo "$RPM_OPT_FLAGS")
+  # Prevent memory exhaustion
+  export CFLAGS=$(echo "$RPM_OPT_FLAGS" | sed -e 's/-g//')
 
 %else
   # Go with the default, which is "asmgcc"
@@ -367,7 +385,7 @@ BuildPyPy() {
   # For now, filter our CFLAGS of everything that could be conflicting with
   # pypy.  Need to check these and reenable ones that are okay later.
   # Filed as https://bugzilla.redhat.com/show_bug.cgi?id=666966
-  export CFLAGS=$(echo "$RPM_OPT_FLAGS" | sed -e 's/-Wp,-D_FORTIFY_SOURCE=2//' -e 's/-fexceptions//' -e 's/-fstack-protector//' -e 's/--param=ssp-buffer-size=4//' -e 's/-O2//' -e 's/-fasynchronous-unwind-tables//' -e 's/-march=i686//' -e 's/-mtune=atom//')
+  export CFLAGS=$(echo "$RPM_OPT_FLAGS" | sed -e 's/-Wp,-D_FORTIFY_SOURCE=2//' -e 's/-fexceptions//' -e 's/-fstack-protector//' -e 's/--param=ssp-buffer-size=4//' -e 's/-O2//' -e 's/-fasynchronous-unwind-tables//' -e 's/-march=i686//' -e 's/-mtune=atom//' -e 's/-g//')
 
 %endif
 
@@ -824,6 +842,12 @@ CheckPyPy %{name}-stackless
 
 
 %changelog
+* Fri May 13 2016 Miro Hrončok <mhroncok@redhat.com> - 2.4.0-5
+- Fix FTBFS (#1307889)
+- Add patch to fix maximum recursion depth error during build
+- Don't use -g flag to prevent memory exhaustion
+- Add fix form Arch Linux to prevent VerificationError during the build
+
 * Thu Feb 04 2016 Fedora Release Engineering <releng@fedoraproject.org> - 2.4.0-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
 
