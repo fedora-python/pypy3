@@ -1,6 +1,6 @@
 Name:           pypy3
 Version:        2.4.0
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Python 3 implementation with a Just-In-Time compiler
 
 Group:          Development/Languages
@@ -155,6 +155,20 @@ Patch2: 007-remove-startup-message.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1307889
 # https://bitbucket.org/pypy/pypy/commits/c4c54cb69aba
 Patch3: 008-maximum-recursion-depth.patch
+
+# CVE-2016-0772 python: smtplib StartTLS stripping attack
+# rhbz#1303647: https://bugzilla.redhat.com/show_bug.cgi?id=1303647
+# rhbz#1351680: https://bugzilla.redhat.com/show_bug.cgi?id=1351680
+# FIXED UPSTREAM: https://hg.python.org/cpython/rev/d590114c2394
+# Raise an error when STARTTLS fails
+Patch4: 009-raise-an-error-when-STARTTLS-fails.patch
+
+# CVE-2016-5699 python: http protocol steam injection attack
+# rhbz#1303699: https://bugzilla.redhat.com/show_bug.cgi?id=1303699
+# rhbz#1351687: https://bugzilla.redhat.com/show_bug.cgi?id=1351687
+# FIXED UPSTREAM: https://hg.python.org/cpython/rev/bf3e1c9b80e9
+# Disabled HTTP header injections in http.client
+Patch5: 010-disabled-HTTP-header-injections-in-http.client.patch
 
 # Build-time requirements:
 
@@ -842,6 +856,17 @@ CheckPyPy %{name}-stackless
 
 
 %changelog
+* Fri Jul 01 2016 Miro Hrončok <mhroncok@redhat.com> - 2.4.0-6
+- Fix for: CVE-2016-0772 python: smtplib StartTLS stripping attack
+- Raise an error when STARTTLS fails
+- rhbz#1303647: https://bugzilla.redhat.com/show_bug.cgi?id=1303647
+- rhbz#1351680: https://bugzilla.redhat.com/show_bug.cgi?id=1351680
+- Fixed upstream: https://hg.python.org/cpython/rev/d590114c2394
+- Fix for: CVE-2016-5699 python: http protocol steam injection attack
+- rhbz#1303699: https://bugzilla.redhat.com/show_bug.cgi?id=1303699
+- rhbz#1351687: https://bugzilla.redhat.com/show_bug.cgi?id=1351687
+- Fixed upstream: https://hg.python.org/cpython/rev/bf3e1c9b80e9
+
 * Fri May 13 2016 Miro Hrončok <mhroncok@redhat.com> - 2.4.0-5
 - Fix FTBFS (#1307889)
 - Add patch to fix maximum recursion depth error during build

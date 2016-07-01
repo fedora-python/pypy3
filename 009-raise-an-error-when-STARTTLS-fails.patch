@@ -1,0 +1,35 @@
+From 9092f6266c3054befff053aa943632856cedbdba Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Miro=20Hron=C4=8Dok?= <miro@hroncok.cz>
+Date: Fri, 1 Jul 2016 11:42:53 +0200
+Subject: [PATCH] Raise an error when STARTTLS fails
+
+CVE-2016-0772 python: smtplib StartTLS stripping attack
+rhbz#1303647: https://bugzilla.redhat.com/show_bug.cgi?id=1303647
+rhbz#1351680: https://bugzilla.redhat.com/show_bug.cgi?id=1351680
+
+Based on an upstream change by Benjamin Peterson <benjamin@python.org>
+- in changeset 101887:d590114c2394 3.4
+- https://hg.python.org/cpython/rev/d590114c2394
+---
+ lib-python/3/smtplib.py | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/lib-python/3/smtplib.py b/lib-python/3/smtplib.py
+index 679e478..1aacfaf 100644
+--- a/lib-python/3/smtplib.py
++++ b/lib-python/3/smtplib.py
+@@ -666,6 +666,11 @@ class SMTP:
+             self.ehlo_resp = None
+             self.esmtp_features = {}
+             self.does_esmtp = 0
++        else:
++            # RFC 3207:
++            # 501 Syntax error (no parameters allowed)
++            # 454 TLS not available due to temporary reason
++            raise SMTPResponseException(resp, reply)
+         return (resp, reply)
+ 
+     def sendmail(self, from_addr, to_addrs, msg, mail_options=[],
+-- 
+2.9.0
+
