@@ -1,6 +1,6 @@
-From 9092f6266c3054befff053aa943632856cedbdba Mon Sep 17 00:00:00 2001
+From 4c0f6a6fe6c71009ab4a6b3716e70af021e04904 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Miro=20Hron=C4=8Dok?= <miro@hroncok.cz>
-Date: Fri, 1 Jul 2016 11:42:53 +0200
+Date: Sat, 2 Jul 2016 20:18:12 +0200
 Subject: [PATCH] Raise an error when STARTTLS fails
 
 CVE-2016-0772 python: smtplib StartTLS stripping attack
@@ -15,10 +15,10 @@ Based on an upstream change by Benjamin Peterson <benjamin@python.org>
  1 file changed, 5 insertions(+)
 
 diff --git a/lib-python/3/smtplib.py b/lib-python/3/smtplib.py
-index 679e478..1aacfaf 100644
+index 57f181b..5656cc6 100755
 --- a/lib-python/3/smtplib.py
 +++ b/lib-python/3/smtplib.py
-@@ -666,6 +666,11 @@ class SMTP:
+@@ -680,6 +680,11 @@ class SMTP:
              self.ehlo_resp = None
              self.esmtp_features = {}
              self.does_esmtp = 0

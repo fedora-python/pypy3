@@ -1,12 +1,24 @@
-diff -rup pypy-pypy-f66246c46ca3/lib_pypy/_pypy_interact.py pypy-pypy-f66246c46ca3/lib_pypy/_pypy_interact.py
---- pypy-pypy-f66246c46ca3/lib_pypy/_pypy_interact.py	2013-05-27 10:35:37.612236951 +0200
-+++ pypy-pypy-f66246c46ca3/lib_pypy/_pypy_interact.py	2013-05-27 10:37:25.602852747 +0200
-@@ -4,7 +4,7 @@ import sys
- irc_header = "And now for something completely different"
- 
- 
--def interactive_console(mainmodule=None, quiet=False):
-+def interactive_console(mainmodule=None, quiet=True):
-     # set sys.{ps1,ps2} just before invoking the interactive interpreter. This
-     # mimics what CPython does in pythonrun.c
-     if not hasattr(sys, 'ps1'):
+diff --git a/lib_pypy/_pypy_interact.py b/lib_pypy/_pypy_interact.py
+index 9542f54..5e44fb4 100644
+--- a/lib_pypy/_pypy_interact.py
++++ b/lib_pypy/_pypy_interact.py
+@@ -13,19 +13,6 @@ def interactive_console(mainmodule=None, quiet=False):
+         sys.ps1 = '>>>> '
+     if not hasattr(sys, 'ps2'):
+         sys.ps2 = '.... '
+-    #
+-    if not quiet:
+-        try:
+-            from _pypy_irc_topic import some_topic
+-            text = "%s: ``%s''" % ( irc_header, some_topic())
+-            while len(text) >= 80:
+-                i = text[:80].rfind(' ')
+-                print(text[:i])
+-                text = text[i+1:]
+-            print(text)
+-        except ImportError:
+-            pass
+-    #
+     run_interactive = run_simple_interactive_console
+     try:
+         if not os.isatty(sys.stdin.fileno()):

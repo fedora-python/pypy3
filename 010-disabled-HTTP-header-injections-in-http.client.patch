@@ -1,6 +1,6 @@
-From 82dc922c7c4771ef789f5b395f54a603c693b05e Mon Sep 17 00:00:00 2001
+From 9a8db191cf8a3557a24e91081bf434d581b98c5a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Miro=20Hron=C4=8Dok?= <miro@hroncok.cz>
-Date: Fri, 1 Jul 2016 13:08:55 +0200
+Date: Sat, 2 Jul 2016 20:20:58 +0200
 Subject: [PATCH] Disabled HTTP header injections in http.client.
 
 CVE-2016-5699 python: http protocol steam injection attack
@@ -16,7 +16,7 @@ Based on an upstream change by Demian Brecht and Serhiy Storchaka
  2 files changed, 94 insertions(+)
 
 diff --git a/lib-python/3/http/client.py b/lib-python/3/http/client.py
-index 5466d06..1d215d8 100644
+index e05c84d..476d6c8 100644
 --- a/lib-python/3/http/client.py
 +++ b/lib-python/3/http/client.py
 @@ -70,6 +70,7 @@ import email.parser
@@ -27,9 +27,9 @@ index 5466d06..1d215d8 100644
  import socket
  import collections
  from urllib.parse import urlsplit
-@@ -207,6 +208,34 @@ MAXAMOUNT = 1048576
- # maximal line length when calling readline().
- _MAXLINE = 65536
+@@ -217,6 +218,34 @@ _MAXLINE = 65536
+ _MAXHEADERS = 100
+ 
  
 +# Header name/value ABNF (http://tools.ietf.org/html/rfc7230#section-3.2)
 +#
@@ -62,7 +62,7 @@ index 5466d06..1d215d8 100644
  class HTTPMessage(email.message.Message):
      # XXX The only usage of this method is in
      # http.server.CGIHTTPRequestHandler.  Maybe move the code there so
-@@ -953,12 +982,20 @@ class HTTPConnection:
+@@ -1035,12 +1064,20 @@ class HTTPConnection:
  
          if hasattr(header, 'encode'):
              header = header.encode('ascii')
@@ -73,7 +73,7 @@ index 5466d06..1d215d8 100644
          values = list(values)
          for i, one_value in enumerate(values):
              if hasattr(one_value, 'encode'):
-                 values[i] = one_value.encode('latin1')
+                 values[i] = one_value.encode('latin-1')
              elif isinstance(one_value, int):
                  values[i] = str(one_value).encode('ascii')
 +
@@ -84,12 +84,12 @@ index 5466d06..1d215d8 100644
          header = header + b': ' + value
          self._output(header)
 diff --git a/lib-python/3/test/test_httplib.py b/lib-python/3/test/test_httplib.py
-index 420302c..31d3bd0 100644
+index c8ded92..fd71bea 100644
 --- a/lib-python/3/test/test_httplib.py
 +++ b/lib-python/3/test/test_httplib.py
 @@ -134,6 +134,33 @@ class HeaderTests(TestCase):
          conn.putheader('Content-length', 42)
-         self.assertTrue(b'Content-length: 42' in conn._buffer)
+         self.assertIn(b'Content-length: 42', conn._buffer)
  
 +        conn.putheader('Foo', ' bar ')
 +        self.assertIn(b'Foo:  bar ', conn._buffer)

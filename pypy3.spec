@@ -1,6 +1,6 @@
 Name:           pypy3
-Version:        2.4.0
-Release:        6%{?dist}
+Version:        5.2.0
+Release:        0.1.alpha1%{?dist}
 Summary:        Python 3 implementation with a Just-In-Time compiler
 
 Group:          Development/Languages
@@ -116,7 +116,7 @@ URL:            http://pypy.org/
 # Easy way to turn off the selftests:
 %global run_selftests 1
 
-%global pypyprefix %{_libdir}/%{name}-%{version}
+%global pypyprefix %{_libdir}/pypy3-%{version}
 %global pylibver 3
 
 # We refer to this subdir of the source tree in a few places during the build:
@@ -129,17 +129,17 @@ URL:            http://pypy.org/
   %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 # Source and patches:
-Source0: https://bitbucket.org/pypy/pypy/downloads/%{name}-%{version}-src.tar.bz2
+Source0: https://bitbucket.org/pypy/pypy/downloads/pypy3.3-v5.2.0-alpha1-src.tar.bz2
 
 # Supply various useful RPM macros for building python modules against pypy:
 #  __pypy, pypy_sitelib, pypy_sitearch
-Source2: macros.%{name}
+Source2: macros.pypy3
 
 # By default, if built at a tty, the translation process renders a Mandelbrot
 # set to indicate progress.
 # This obscures useful messages, and may waste CPU cycles, so suppress it, and
 # merely render dots:
-Patch0: pypy-1.2-suppress-mandelbrot-set-during-tty-build.patch
+Patch0: 001-nevertty.patch
 
 # Patch pypy.translator.platform so that stdout from "make" etc gets logged,
 # rather than just stderr, so that the command-line invocations of the compiler
@@ -152,9 +152,6 @@ Patch1: 006-always-log-stdout.patch
 # community that won't make sense outside of it).  [Sorry to be a killjoy]
 Patch2: 007-remove-startup-message.patch
 
-# https://bugzilla.redhat.com/show_bug.cgi?id=1307889
-# https://bitbucket.org/pypy/pypy/commits/c4c54cb69aba
-Patch3: 008-maximum-recursion-depth.patch
 
 # CVE-2016-0772 python: smtplib StartTLS stripping attack
 # rhbz#1303647: https://bugzilla.redhat.com/show_bug.cgi?id=1303647
@@ -180,7 +177,7 @@ Patch5: 010-disabled-HTTP-header-injections-in-http.client.patch
 
 # Note, pypy3 is built with pypy2, so no dependency cycle
 
-%global use_self_when_building 1
+%global use_self_when_building 0
 %if 0%{use_self_when_building}
 # pypy3 can only be build with pypy2
 BuildRequires: pypy
@@ -205,6 +202,8 @@ BuildRequires:  bzip2-devel
 BuildRequires:  ncurses-devel
 BuildRequires:  expat-devel
 BuildRequires:  openssl-devel
+BuildRequires:  gdbm-devel
+BuildRequires:  xz-devel
 %ifnarch s390
 BuildRequires:  valgrind-devel
 %endif
@@ -234,7 +233,7 @@ BuildRequires:  emacs
 BuildRequires:  git
 
 # Metadata for the core package (the JIT build):
-Requires: %{name}-libs%{?_isa} = %{version}-%{release}
+Requires: pypy3-libs%{?_isa} = %{version}-%{release}
 
 %description
 PyPy's implementation of Python 3, featuring a Just-In-Time compiler on some CPU
@@ -266,7 +265,7 @@ Libraries required by the various PyPy implementations of Python 3.
 %package devel
 Group:    Development/Languages
 Summary:  Development tools for working with PyPy3
-Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: pypy3%{?_isa} = %{version}-%{release}
 
 %description devel
 Header files for building C extension modules against PyPy3
@@ -276,13 +275,13 @@ Header files for building C extension modules against PyPy3
 %package stackless
 Group:    Development/Languages
 Summary:  Stackless Python interpreter built using PyPy3
-Requires: %{name}-libs%{?_isa} = %{version}-%{release}
+Requires: pypy3-libs%{?_isa} = %{version}-%{release}
 %description stackless
 Build of PyPy3 with support for micro-threads for massive concurrency
 %endif
 
 %prep
-%autosetup -n %{name}-%{version}-src -p1 -S git
+%autosetup -n pypy3.3-v5.2.0-alpha1-src -p1 -S git
 
 # Replace /usr/local/bin/python shebangs with /usr/bin/python:
 find -name "*.py" -exec \
@@ -303,20 +302,6 @@ find lib-python/%{pylibver} -name "*.py" -exec \
   sed -r -i '1s|^#!\s*/usr/bin.*python.*|#!/usr/bin/%{name}|' \
     "{}" \
     \;
-
-# Hacky fix to allow the curses module to build on x86_64; otherwise we get:
-#   cffi.ffiplatform.VerificationError: anonymous MEVENT: wrong total size
-#                                       (we have 24, but C compiler says 20)
-# https://github.com/archlinuxcn/repo/commit/560a75090333b6de8a1de960acac5e624b444ee1
-%ifarch x86_64
-  _type=unsigned
-%else
-  _type=uint32_t
-%endif
-
-sed -i -e "s/typedef unsigned long mmask_t/typedef $_type mmask_t/" \
-         -e "s/typedef unsigned long chtype/typedef $_type chtype/" \
-      lib_pypy/_curses.py
 
 %build
 
@@ -379,8 +364,7 @@ BuildPyPy() {
   # of root pointers:
   %global gcrootfinder_options --gcrootfinder=shadowstack
 
-  # Prevent memory exhaustion
-  export CFLAGS=$(echo "$RPM_OPT_FLAGS" | sed -e 's/-g//')
+  export CFLAGS=$(echo "$RPM_OPT_FLAGS")
 
 %else
   # Go with the default, which is "asmgcc"
@@ -399,7 +383,7 @@ BuildPyPy() {
   # For now, filter our CFLAGS of everything that could be conflicting with
   # pypy.  Need to check these and reenable ones that are okay later.
   # Filed as https://bugzilla.redhat.com/show_bug.cgi?id=666966
-  export CFLAGS=$(echo "$RPM_OPT_FLAGS" | sed -e 's/-Wp,-D_FORTIFY_SOURCE=2//' -e 's/-fexceptions//' -e 's/-fstack-protector//' -e 's/--param=ssp-buffer-size=4//' -e 's/-O2//' -e 's/-fasynchronous-unwind-tables//' -e 's/-march=i686//' -e 's/-mtune=atom//' -e 's/-g//')
+  export CFLAGS=$(echo "$RPM_OPT_FLAGS" | sed -e 's/-Wp,-D_FORTIFY_SOURCE=2//' -e 's/-fexceptions//' -e 's/-fstack-protector//' -e 's/--param=ssp-buffer-size=4//' -e 's/-O2//' -e 's/-fasynchronous-unwind-tables//' -e 's/-march=i686//' -e 's/-mtune=atom//')
 
 %endif
 
@@ -425,7 +409,6 @@ BuildPyPy() {
     PYPY_USESSION_DIR=$(pwd) \
     PYPY_USESSION_BASENAME=$ExeName \
     $INTERP ../../rpython/bin/rpython  \
-    --output=$ExeName \
     %{gcrootfinder_options} \
     $Options \
     targetpypystandalone
@@ -442,7 +425,7 @@ BuildPyPy() {
 }
 
 BuildPyPy \
-  %{name} \
+  pypy3 \
 %if 0%{with_jit}
   "-Ojit" \
 %else
@@ -452,7 +435,7 @@ BuildPyPy \
 
 %if 0%{with_stackless}
 BuildPyPy \
-  %{name}-stackless \
+  pypy3-stackless \
    "--stackless"
 %endif
 
@@ -498,35 +481,10 @@ InstallPyPy() {
 mkdir -p %{buildroot}/%{_bindir}
 mkdir -p %{buildroot}/%{pypyprefix}
 
-InstallPyPy %{name}
 
-%if 0%{with_stackless}
-InstallPyPy %{name}-stackless
-%endif
+# Run installing script,  archive-name  %{name}-%{version} in %{buildroot}/%{_libdir} == %{pypyprefix} 
+%{bootstrap_python_interp} pypy/tool/release/package.py --archive-name %{name}-%{version} --builddir %{buildroot}/%{_libdir}
 
-
-# Install the various support libraries as described at:
-#   http://codespeak.net/pypy/dist/pypy/doc/getting-started-python.html#installation
-# which refers to a "PREFIX" found relative to the location of the binary.
-# Given that the pypy binaries will be in /usr/bin, PREFIX can be
-# "../share/pypy-1.2" relative to that directory, i.e. /usr/share/pypy-1.2
-# 
-# Running "strace" on a built binary indicates that it searches within
-#   PREFIX/lib-python/modified-2.5.2
-# not
-#   PREFIX/lib-python/modified.2.5.2
-# as given on the above page, i.e. it uses '-' not '.'
-
-cp -a lib-python %{buildroot}/%{pypyprefix}
-
-cp -a lib_pypy %{buildroot}/%{pypyprefix}
-
-# Remove a text file that documents which selftests fail on Win32:
-rm %{buildroot}/%{pypyprefix}/lib-python/win32-failures.txt
-
-# Remove a text file containing upstream's recipe for syncing stdlib in
-# their hg repository with cpython's:
-rm %{buildroot}/%{pypyprefix}/lib-python/stdlib-upgrade.txt
 
 # Remove shebang lines from .py files that aren't executable, and
 # remove executability from .py files that don't have a shebang line:
@@ -546,6 +504,8 @@ find \
 
 mkdir -p %{buildroot}/%{pypyprefix}/site-packages
 
+ln -s %{pypyprefix}/bin/pypy3 %{buildroot}/%{_bindir}/pypy3
+ln -s %{pypyprefix}/bin/pypy3.3 %{buildroot}/%{_bindir}/pypy3.3
 
 # pypy uses .pyc files by default (--objspace-usepycfiles), but has a slightly
 # different bytecode format to CPython.  It doesn't use .pyo files: the -O flag
@@ -604,16 +564,16 @@ mkdir -p %{buildroot}/%{pypyprefix}/site-packages
 # Note that some of the test files deliberately contain syntax errors, so
 # we pass 0 for the second argument ("errors_terminate"):
 /usr/lib/rpm/brp-python-bytecompile \
-  %{buildroot}/%{_bindir}/%{name} \
+  %{buildroot}%{pypyprefix}/bin/pypy3 \
   0
 
-%{buildroot}/%{pypyprefix}/%{name} -c 'import _tkinter'
-%{buildroot}/%{pypyprefix}/%{name} -c 'import tkinter'
-%{buildroot}/%{pypyprefix}/%{name} -c 'import _sqlite3'
-%{buildroot}/%{pypyprefix}/%{name} -c 'import _curses'
-%{buildroot}/%{pypyprefix}/%{name} -c 'import curses'
-%{buildroot}/%{pypyprefix}/%{name} -c 'import syslog'
-%{buildroot}/%{pypyprefix}/%{name} -c 'from _sqlite3 import *'
+%{buildroot}%{pypyprefix}/bin/pypy3 -c 'import _tkinter'
+%{buildroot}%{pypyprefix}/bin/pypy3 -c 'import tkinter'
+%{buildroot}%{pypyprefix}/bin/pypy3 -c 'import _sqlite3'
+%{buildroot}%{pypyprefix}/bin/pypy3 -c 'import _curses'
+%{buildroot}%{pypyprefix}/bin/pypy3 -c 'import curses'
+%{buildroot}%{pypyprefix}/bin/pypy3 -c 'import syslog'
+%{buildroot}%{pypyprefix}/bin/pypy3 -c 'from _sqlite3 import *'
 
 # Header files for C extension modules.
 # Upstream's packaging process (pypy/tool/release/package.py)
@@ -626,8 +586,8 @@ mkdir -p %{buildroot}/%{pypyprefix}/site-packages
 # it's not yet clear to me how upstream plan to deal with the C extension
 # interface going forward, so let's just mimic upstream for now.
 %global pypy_include_dir  %{pypyprefix}/include
-mkdir -p %{buildroot}/%{pypy_include_dir}
-cp include/*.h %{buildroot}/%{pypy_include_dir}
+mkdir -p %{buildroot}%{pypy_include_dir}
+rm -f %{buildroot}%{pypy_include_dir}/README
 
 
 # Capture the RPython source code files from the build within the debuginfo
@@ -677,16 +637,18 @@ find \
 # Install the JIT trace mode for Emacs:
 %if %{with_emacs}
 mkdir -p %{buildroot}/%{_emacs_sitelispdir}
-cp -a rpython/jit/tool/pypytrace-mode.el %{buildroot}/%{_emacs_sitelispdir}/%{name}trace-mode.el
-cp -a rpython/jit/tool/pypytrace-mode.elc %{buildroot}/%{_emacs_sitelispdir}/%{name}trace-mode.elc
+cp -a rpython/jit/tool/pypytrace-mode.el %{buildroot}/%{_emacs_sitelispdir}/pypy3trace-mode.el
+cp -a rpython/jit/tool/pypytrace-mode.elc %{buildroot}/%{_emacs_sitelispdir}/pypy3trace-mode.elc
 %endif
 
 # Install macros for rpm:
 mkdir -p %{buildroot}/%{_rpmconfigdir}/macros.d
 install -m 644 %{SOURCE2} %{buildroot}/%{_rpmconfigdir}/macros.d
 
-# Remove build script from the package
-rm %{buildroot}/%{pypyprefix}/lib_pypy/ctypes_config_cache/rebuild.py
+# Remove files we don't want:
+rm -f %{buildroot}%{_libdir}//pypy3-5.2.0.tar.bz2
+rm -f %{buildroot}%{pypyprefix}/LICENSE
+rm -f %{buildroot}%{pypyprefix}/README.rst
 
 %check
 topdir=$(pwd)
@@ -807,10 +769,10 @@ CheckPyPy() {
 #pypy/goal/pypy pypy/test_all.py --resultlog=pypyjit_new.log
 
 %if %{run_selftests}
-CheckPyPy %{name}
+CheckPyPy pypy-c
 
 %if 0%{with_stackless}
-CheckPyPy %{name}-stackless
+CheckPyPy pypy3-stackless
 %endif
 
 %endif # run_selftests
@@ -826,37 +788,39 @@ CheckPyPy %{name}-stackless
 
 %dir %{pypyprefix}
 %dir %{pypyprefix}/lib-python
-%{pypyprefix}/lib-python/stdlib-version.txt
 %{pypyprefix}/lib-python/%{pylibver}/
-%{pypyprefix}/lib-python/conftest.py*
 %{pypyprefix}/lib_pypy/
 %{pypyprefix}/site-packages/
 %if %{with_emacs}
-%{_emacs_sitelispdir}/%{name}trace-mode.el
-%{_emacs_sitelispdir}/%{name}trace-mode.elc
+%{_emacs_sitelispdir}/pypy3trace-mode.el
+%{_emacs_sitelispdir}/pypy3trace-mode.elc
 %endif
 
 %files
 %license LICENSE
 %doc README.rst
-%{_bindir}/%{name}
-%{pypyprefix}/%{name}
+%{_bindir}/pypy3
+%{_bindir}/pypy3.3
+%{pypyprefix}/bin/
 
 %files devel
 %dir %{pypy_include_dir}
 %{pypy_include_dir}/*.h
-%{_rpmconfigdir}/macros.d/macros.%{name}
+%{_rpmconfigdir}/macros.d/macros.pypy3
 
 %if 0%{with_stackless}
 %files stackless
 %license LICENSE
 %doc README.rst
-%{_bindir}/%{name}-stackless
+%{_bindir}/pypy-stackless
 %endif
 
 
 %changelog
-* Fri Jul 01 2016 Miro Hrončok <mhroncok@redhat.com> - 2.4.0-6
+* Sat Jul 02 2016 Miro Hrončok <mhroncok@redhat.com> - 5.2.0-0.1.alpha1
+- First alpha build of PyPy 3.3
+
+* Fri Jul 01 2016 Miro Hrončok <mhroncok@redhat.com> - 2.4.0-3
 - Fix for: CVE-2016-0772 python: smtplib StartTLS stripping attack
 - Raise an error when STARTTLS fails
 - rhbz#1303647: https://bugzilla.redhat.com/show_bug.cgi?id=1303647
@@ -866,18 +830,6 @@ CheckPyPy %{name}-stackless
 - rhbz#1303699: https://bugzilla.redhat.com/show_bug.cgi?id=1303699
 - rhbz#1351687: https://bugzilla.redhat.com/show_bug.cgi?id=1351687
 - Fixed upstream: https://hg.python.org/cpython/rev/bf3e1c9b80e9
-
-* Fri May 13 2016 Miro Hrončok <mhroncok@redhat.com> - 2.4.0-5
-- Fix FTBFS (#1307889)
-- Add patch to fix maximum recursion depth error during build
-- Don't use -g flag to prevent memory exhaustion
-- Add fix form Arch Linux to prevent VerificationError during the build
-
-* Thu Feb 04 2016 Fedora Release Engineering <releng@fedoraproject.org> - 2.4.0-4
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
-
-* Tue Aug 04 2015 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 2.4.0-3
-- Bump release to rebuild with new execstack
 
 * Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.4.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
