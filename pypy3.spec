@@ -1,6 +1,6 @@
 Name:           pypy3
-Version:        5.2.0
-Release:        0.1.alpha1%{?dist}
+Version:        5.5.0
+Release:        1%{?dist}
 Summary:        Python 3 implementation with a Just-In-Time compiler
 
 Group:          Development/Languages
@@ -129,7 +129,7 @@ URL:            http://pypy.org/
   %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 # Source and patches:
-Source0: https://bitbucket.org/pypy/pypy/downloads/pypy3.3-v5.2.0-alpha1-src.tar.bz2
+Source0: https://bitbucket.org/pypy/pypy/downloads/pypy3.3-v%{version}-alpha-src.tar.bz2
 
 # Supply various useful RPM macros for building python modules against pypy:
 #  __pypy, pypy_sitelib, pypy_sitearch
@@ -201,11 +201,16 @@ BuildRequires:  zlib-devel
 BuildRequires:  bzip2-devel
 BuildRequires:  ncurses-devel
 BuildRequires:  expat-devel
-BuildRequires:  openssl-devel
 BuildRequires:  gdbm-devel
 BuildRequires:  xz-devel
 %ifnarch s390
 BuildRequires:  valgrind-devel
+%endif
+
+%if 0%{?fedora} >= 26
+BuildRequires: compat-openssl10-devel
+%else
+BuildRequires: openssl-devel
 %endif
 
 %if %{run_selftests}
@@ -281,7 +286,7 @@ Build of PyPy3 with support for micro-threads for massive concurrency
 %endif
 
 %prep
-%autosetup -n pypy3.3-v5.2.0-alpha1-src -p1 -S git
+%autosetup -n pypy3-v%{version}-src -p1 -S git
 
 # Replace /usr/local/bin/python shebangs with /usr/bin/python:
 find -name "*.py" -exec \
@@ -803,6 +808,8 @@ CheckPyPy pypy3-stackless
 %{_bindir}/pypy3.3
 %{pypyprefix}/bin/
 
+%exclude %{_libdir}/%{name}-%{version}.tar.bz2
+
 %files devel
 %dir %{pypy_include_dir}
 %{pypy_include_dir}/*.h
@@ -817,6 +824,10 @@ CheckPyPy pypy3-stackless
 
 
 %changelog
+* Sat Oct 15 2016 Miro Hrončok <mhroncok@redhat.com> - 5.5.0-1
+- PyPy 3.3 5.5.0
+- On Fedora 26+, BR compat-openssl10-devel
+
 * Sat Jul 02 2016 Miro Hrončok <mhroncok@redhat.com> - 5.2.0-0.1.alpha1
 - First alpha build of PyPy 3.3
 
